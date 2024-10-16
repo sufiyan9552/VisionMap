@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Include Font Awesome for Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <!-- Include Bootstrap JS and Popper.js -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script> -->
+  <link rel="icon" href="icon/globe-icon.png" type="image/png">
+  <script src="https://unpkg.com/compromise"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
+
+
+  <script defer>
+    function checkSession() {
+      const email = sessionStorage.getItem('userEmail'); 
+
+      if (!email) {
+        window.location.href = 'login.html';
+      }
+    }
+    checkSession(); 
+  </script>
+
+  <style>
+    canvas {
+      background-color: white;
+    }
+  </style>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionMap</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+
+  <div id="capturescreen">
+    <!-- Overlay to block background -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-spinner">
+        <img src="icon/loader.gif" alt="Loading...">
+      </div>
+    </div>
+    
+    <div id="cesiumContainer">
+      
+      <!-- <video id="trailer" width="1000" controls muted style="display: none;">
+        <source src="icon/sample.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video> -->
+      
+
+      <div class="icon-container">
+        <div class="circular-icon" id="horizontal-icon" onclick="toggleHorizontalMenu()"></div>
+      </div>
+
+      <!-- vertical Tools -->
+      <div id="verticalTool" class="vertical-menu">
+        <!-- Add menu items here -->
+      </div>
+
+      <div class="responsive-container">
+        <div class="inner-content">
+          <!-- Horizontal Tools -->
+          <div id="horizontalTools" class="horizontal-menu">
+            <!-- Add horizontal menu items here -->
+          </div>
+        </div>
+      </div>
+
+
+      <div class="toolbox p-3 bg-dark text-white rounded shadow-lg" style="display: none;">
+        <div class="toolbox-header d-flex justify-content-between align-items-center mb-3">
+          <img src="icon/toc-layer.svg" alt="Table of Contents" style="width: 16px;height: 16px;margin-left: 15px;">
+          <span class="fw-bold">TOC Layer</span>
+          <button class="btn btn-default" style=" display: block;" id="addLayerModel">Add</button>
+          <i class="fas fa-times" style="cursor: pointer;"></i>
+        </div>
+        <div class="content">
+          <div class="layer-list">
+            <!-- Base Map Checkbox with Zoom Icon -->
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2"
+              style="background-color: rgb(83, 81, 81);">
+              <div class="form-check d-flex align-items-center">
+                <i class="fa fa-globe" aria-hidden="true"></i>
+                <label class="form-check-label ms-2" for="baseMap">Base Map</label>
+              </div>
+            </div>
+            <!-- OpenStreet Map Checkbox with Zoom Icon and Model Label -->
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="OpenStreet" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="OpenStreet">OpenStreet Map</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="beingMap" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="beingMap">Bing Maps Aerial</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="beingRoadMap" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="beingRoadMap">Bing Maps Road</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2"
+              style="background-color: rgb(83, 81, 81);">
+              <div class="form-check d-flex align-items-center">
+                <i class="fa fa-map" aria-hidden="true"></i>
+                <label class="form-check-label ms-2" for="OpenStreet">Model</label>
+              </div>
+            </div>
+
+
+
+            <!-- New York City 3D Buildings Checkbox with Zoom Icon -->
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="newYork" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="newYork">NewYork City 3D</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+            <!-- Vexcel 3D Cities Data for Sydney Checkbox with Zoom Icon -->
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="sydney" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="sydney">Vexcel 3D Sydney</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+            <!-- Washington DC 2017 Checkbox with Zoom Icon -->
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="washington" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="washington">Washington 2017</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="moonTerrain" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="moonTerrain">Moon Terrain</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2"
+              style="background-color: rgb(83, 81, 81);">
+              <div class="form-check d-flex align-items-center">
+                <i class="fa fa-map" aria-hidden="true"></i>
+                <label class="form-check-label ms-2" for="OpenStreet">Terrain</label>
+              </div>
+            </div>
+
+
+
+            <div class="layer-item d-flex justify-content-between align-items-center mb-2">
+              <div class="form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" id="WorldTerrain" style="cursor: pointer;">
+                <label class="form-check-label ms-2" for="WorldTerrain">World Terrain</label>
+              </div>
+              <i class="fas fa-search-plus ms-2" title="Zoom" style="cursor: pointer;"></i>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- GIF element -->
+      <img id="background-gif" src="icon/Vision-2.png" alt="Loading animation">
+      <div id="errorInfo" style="display: none;">
+        <div class="block-center">
+          <div class="alert alert-content d-flex">
+            <!-- <div class="alert-icon-section">
+                        <img src="assets/images/mainpage/error.svg">
+                    </div> -->
+            <div class="outer-container d-flex">
+              <div class="inner-container">
+                <p id="messageInfoVal"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loadTools" style="display: none;">
+
+      </div>
+
+      <div class="modal-backdrop" style="display: none;">
+        <div class="modal-box" style="display: none;">
+          <span class="close-icon">&times;</span> <!-- Close icon -->
+          <div class="form-group">
+            <label for="inputLabel">Add Layer</label>
+            <input type="text" class="form-control" id="inputLabel" placeholder="Enter layer Url Or Assets ID">
+          </div>
+          <div class="form-group">
+            <label for="dropdownMenu">Data Type</label>
+            <select class="form-control" id="dropdownMenu">
+              <option value="">Select Data Type</option>
+              <option value="vector-point">Vector - Point</option>
+              <option value="vector-line">Vector - Line</option>
+              <option value="vector-polygon">Vector - Polygon</option>
+              <option value="raster">Raster</option>
+              <option value="point-cloud">Point Cloud</option>
+              <option value="3d-model">3D Model or Tileset</option>
+              <option value="GeoJson">GeoJson</option>
+              <option value="Terrain">Terrain</option>
+              <option value="Wms">Wms Layer</option>
+
+            </select>
+          </div>
+          <button class="btn btn-default" id="addLayers">Add Layer</button>
+          <button class="btn btn-default" id="clearData">Clear</button>
+        </div>
+
+      </div>
+
+      <div id="compass" class="reality-wrap" data-toggle="tooltip" data-placement="top" title="North Arrow">
+        <img src="icon/compass-1.svg" alt="compass" id="compassImage" style="cursor: pointer;">
+      </div>
+
+      <div class="info-box" style="display: none;">
+        <div class="info-header">
+          <span>Info Box</span>
+          <button class="close-btn" id="infoClosed">x</button>
+        </div>
+        <div class="info-content">
+          <div class="info-row">
+            <span class="key">Location:</span>
+            <span class="value" id="locationvalue"></span>
+          </div>
+          <div class="info-row">
+            <span class="key">Category:</span>
+            <span class="value" id="amenityvalue">Hospital</span>
+          </div>
+          <div class="info-row">
+            <span class="key">Name:</span>
+            <span class="value" id="amenityName">+91-1234567890</span>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="toolbar-container">
+        <div class="toolbar">
+          <div id="basicControllTool" class="hidden">
+            <button class="btn btn-toolbar" id="zoominIcon"><i class="fas fa-plus"></i></button>
+            <button class="btn btn-toolbar" id="zoomOutIcon"><i class="fas fa-minus"></i></button>
+    
+            <button class="btn btn-toolbar" id="tiltUpIcon"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn btn-toolbar" id="tiltDownIcon"><i class="fas fa-arrow-down"></i></button>
+    
+            <button class="btn btn-toolbar" id="leftRotate"><i class="fa fa-undo"></i></button>
+            <button class="btn btn-toolbar" id="rightRotate"><i class="fas fa-redo"></i></button>
+    
+            <button class="btn btn-toolbar" id="panLeftIcon"><i class="fas fa-arrow-left"></i></button>
+            <button class="btn btn-toolbar" id="panRightIcon"><i class="fas fa-arrow-right"></i></button>
+    
+          </div>
+            <button class="btn btn-dropdown" id="basicToolBar"><i class="fas fa-caret-down"></i></button>
+        </div>
+    </div>
+
+    </div>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="script.js" differ="true"></script>
+    <script type="text/javaScript" src="assets/js/globel.js"></script>
+    <script type="text/javaScript" src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/map.js"></script>
+    <!-- <script src="https://unpkg.com/cesium-sensor-volumes"></script> -->
+
+    <script type="module"></script>
+</body>
+
+</html>

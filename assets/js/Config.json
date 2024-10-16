@@ -1,0 +1,5 @@
+{
+    "amenitiesUrl": "http://localhost:8080/api/getamimenties",
+    "accessTokenUrl": "https://api.cesium.com/v1/assets/1/endpoint?access_token=",
+    "amentiesGLB":"assets/glb/"
+}
